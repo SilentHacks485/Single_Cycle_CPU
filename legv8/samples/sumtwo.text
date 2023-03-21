@@ -1,0 +1,11 @@
+d2 80 00 00    // MOVZ X0 a LSL 0
+f2 a0 00 00    // MOVK X0 a LSL 16
+f2 c0 00 00    // MOVK X0 a LSL 32
+f2 e0 00 00    // MOVK X0 a LSL 48
+f8 40 0c 00    // LDUR X0 X0 0
+d2 80 01 01    // MOVZ X1 b LSL 0
+f2 a0 00 01    // MOVK X1 b LSL 16
+f2 c0 00 01    // MOVK X1 b LSL 32
+f2 e0 00 01    // MOVK X1 b LSL 48
+f8 40 0c 21    // LDUR X1 X1 0
+8b 01 00 00    // ADD X0 X0 X1
