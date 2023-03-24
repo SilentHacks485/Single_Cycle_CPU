@@ -1,0 +1,493 @@
+#!/usr/bin/awk -f
+# assemble assembly code in a subset of LEGv8 into a file loadable into memory of a verilog module
+
+BEGIN {
+	# variables set by -v
+	if (!databeg)   databeg = 0     # Beginning of the data section
+	if (!textsize)  textsize = 32   # Size of each instruction on text section
+
+	# constants
+	TEXT = "text"
+	DATA = "data"
+
+	# files
+	progname = "asm"
+	basename = ARGV[1]
+	sub(/\.[^.]*$/, "", basename)
+	textfile = basename (basename ? "." : "") TEXT
+	datafile = basename (basename ? "." : "") DATA
+
+	# where to start counting from
+	nextdata = databeg
+
+	# create/truncate the files
+	printf "" >textfile
+	printf "" >datafile
+
+	# populate btohtab
+	btohtab["0000"] = "0"
+	btohtab["0001"] = "1"
+	btohtab["0010"] = "2"
+	btohtab["0011"] = "3"
+	btohtab["0100"] = "4"
+	btohtab["0101"] = "5"
+	btohtab["0110"] = "6"
+	btohtab["0111"] = "7"
+	btohtab["1000"] = "8"
+	btohtab["1001"] = "9"
+	btohtab["1010"] = "a"
+	btohtab["1011"] = "b"
+	btohtab["1100"] = "c"
+	btohtab["1101"] = "d"
+	btohtab["1110"] = "e"
+	btohtab["1111"] = "f"
+
+	# populate branchtab
+	branchtab["EQ"] = "00000"
+	branchtab["NE"] = "00001"
+	branchtab["HS"] = "00010"
+	branchtab["LO"] = "00011"
+	branchtab["MI"] = "00100"
+	branchtab["PL"] = "00101"
+	branchtab["VS"] = "00110"
+	branchtab["VC"] = "00111"
+	branchtab["HI"] = "01000"
+	branchtab["LS"] = "01001"
+	branchtab["GE"] = "01010"
+	branchtab["LT"] = "01011"
+	branchtab["GT"] = "01100"
+	branchtab["LE"] = "01101"
+
+	# initialize indexes
+	nexttext = 0
+}
+
+# write to stderr and exit
+function err(str) {
+	printf "%s: error: %s:%d: %s\n", progname, FILENAME, NR, str >"/dev/stderr"
+	error = 1
+	exit
+}
+
+# change $1 to opcode in machine language
+function getopcode(k, l, m) {
+	# the B.XX and MOVK/MOVZ instructions are the trickiest, since
+	# they require additional information to be appended to the opcode
+	if ($1 == "LSR") {
+		return "110" "1001" "1010"
+	} else if ($1 == "LSL") {
+		return "110" "1001" "1011"
+	} else if ($1 == "ADD") {
+		return "100" "0101" "1000"
+	} else if ($1 == "SUB") {
+		return "110" "0101" "1000"
+	} else if ($1 == "AND") {
+		return "100" "0101" "0000"
+	} else if ($1 == "ORR") {
+		return "101" "0101" "0000"
+	} else if ($1 == "EOR") {
+		return "110" "0101" "0000"
+	} else if ($1 == "ANDS") {
+		return "111" "0101" "0000"
+	} else if ($1 == "ADDS") {
+		return "101" "0101" "1000"
+	} else if ($1 == "SUBS") {
+		return "111" "0101" "1000"
+	} else if ($1 == "ADDI") {
+		return "100" "1000" "100"
+	} else if ($1 == "SUBI") {
+		return "110" "1000" "100"
+	} else if ($1 == "ANDI") {
+		return "100" "1001" "000"
+	} else if ($1 == "ORRI") {
+		return "101" "1001" "000"
+	} else if ($1 == "EORI") {
+		return "110" "1001" "000"
+	} else if ($1 == "ANDIS") {
+		return "111" "1001" "000"
+	} else if ($1 == "ADDIS") {
+		return "101" "1000" "100"
+	} else if ($1 == "SUBIS") {
+		return "111" "1000" "100"
+	} else if ($1 == "B") {
+		return "000" "101"
+	} else if ($1 == "BL") {
+		return "100" "101"
+	} else if ($1 == "BR") {
+		return "110" "1011" "0000"
+	} else if ($1 == "CBZ") {
+		return "101" "1010" "0"
+	} else if ($1 == "CBNZ") {
+		return "101" "1010" "1"
+	} else if ($1 ~ /^B\.[A-Z][A-Z]$/) {
+		# the condition (EQ, LT, GT, etc) is added into bflag[] for further processing
+		bflag[nexttext] = substr($1, 3, 2)
+		return "010" "1010" "0"
+	} else if ($1 == "LDURB") {
+		return "001" "1100" "0010"
+	} else if ($1 == "LDURH") {
+		return "011" "1100" "0010"
+	} else if ($1 == "LDUR") {
+		return "111" "1100" "0010"
+	} else if ($1 == "STURB") {
+		return "001" "1100" "0000"
+	} else if ($1 == "STURH") {
+		return "011" "1100" "0000"
+	} else if ($1 == "STURW") {
+		return "101" "1100" "0000"
+	} else if ($1 == "STUR") {
+		return "111" "1100" "0000"
+	} else if ($1 ~ /^MOV[ZK]$/) {
+		k = $1 ~ /K$/   # 1 if it's MOVK, 0 if it's MOVZ
+		l = toupper($4) # $4 can be "LSL"
+
+		# if NF == 3, it's a normal MOVZ or MOVK instruction
+		# if NF == 5, it's a MOVK/MOVZ combined with LSL
+		if (NF == 3) {
+			m = "00"
+		} else if (NF == 5 && l == "LSL") {
+			if ($5 == 0)
+				m = "00"
+			else if ($5 == 16)
+				m = "01"
+			else if ($5 == 32)
+				m = "10"
+			else if ($5 == 48)
+				m = "11"
+			else
+				err("unknown instruction: " $1)
+		} else
+			err("unknown instruction: " $1)
+
+		return "11" k "1001" "01" m
+	} else {
+		err("unknown instruction: " $1)
+	}
+}
+
+# return format of given opcode in binary string
+function getformat(opcode) {
+	if (opcode ~ /^1101001101.$/)
+		return "SHIFT"
+	else if (opcode ~ /^1..0101...0$/)
+		return "R"
+	else if (opcode ~ /^1..100..00$/)
+		return "I"
+	else if (opcode ~ /^.00101$/)
+		return "B"
+	else if (opcode ~ /^11010110000$/)
+		return "BR"
+	else if (opcode ~ /^1011010.$/)
+		return "CB"
+	else if (opcode ~ /^01010100$/)
+		return "BFLAG"
+	else if (opcode ~ /^..111000010$/)
+		return "LDUR"
+	else if (opcode ~ /^..111000000$/)
+		return "STUR"
+	else if (opcode ~ /^11.100101..$/)
+		return "MOV"
+	else
+		err("unknown opcode: " opcode)
+}
+
+# normalize the operand of a instruction
+function normalizef(operand) {
+	sub(/^\[?#?/, "", operand)
+	sub(/\]?$/, "", operand)
+	return operand
+}
+
+# convert d from decimal to binary
+function dtob(d, size, beg, nbits, b, sign, prefix, i, c, bit) {
+	b = ""
+	sign = d < 0
+	prefix = (sign ? "1" : "0")
+	if (sign)
+		d = -d
+	while (d) {
+		b = ((d%2)?(sign ? "0" : "1"):(sign ? "1" : "0")) b
+		d = int(d/2)
+	}
+	if (sign) {
+		c = "1"
+		for (i = length(b); i > 0; i--) {
+			bit = substr(b, i, 1)
+			if (bit == 0) {
+				b = substr(b, 1, i - 1) "1" substr(b, i + 1)
+				break;
+			} else {
+				b = substr(b, 1, i - 1) "0" substr(b, i + 1)
+			}
+		}
+	}
+	if (length(b) > size)
+		err("integer overflow")
+	while (length(b) < size)
+		b = prefix b
+	if (size == 64)
+		b = substr(b, beg, nbits)
+	return b
+}
+
+# convert b of a given size from binary to hexadecimal
+function btoh(b, size, h, a, i, n) {
+	while (length(b) < size)
+		b = "0" b
+	size = size / 4
+	n = 1
+	for (i = 1; i <= size; i++) {
+		a[i] = substr(b, n, 4)
+		n += 4
+	}
+	for (i = 1; i <= size; i++)
+		a[i] = btohtab[a[i]]
+	for (i = 1; i <= size; i += 2)
+		h = h (i > 1 ? " " : "") a[i] a[i+1]
+	return h
+}
+
+# return bits of register
+function getregister(reg) {
+	if (reg !~ /^X/)
+		err("unknown register: " reg)
+	sub(/^X/, "", reg)
+	if (reg == "ZR")
+		return 11111
+	if (reg + 0 < 0 || reg + 0 > 31)
+		err("unknown register: X" reg)
+	return dtob(reg + 0, 5)
+}
+
+# write words from $0 into data memory
+function writedata(bytes, bits, i) {
+	bits = bytes * 8
+	for (i = 1; i <= NF; i++) {
+		$i = dtob($i, bits, 1, bits)
+		$i = btoh($i, bits)
+		print $i >datafile
+		nextdata += bytes
+	}
+}
+
+# process text instruction
+function processtext(normalize,  opcode) {
+	# normalize instruction
+	if (normalize) {
+		$1 = toupper($1)
+		for (i = 2; i <= NF; i++)
+			$i = normalizef($i)
+		gsub(/,/, " ")
+		sub(/[\t ]+$/, "")
+		sub(/^[\t ]+/, "")
+		gsub(/[\t ]+/, " ")
+	}
+
+	# if instruction is pseudo instruction, call processtext() recursivelly
+	if ($1 == "MOV") {
+		$0 = "ORR " $2 " XZR " $3
+		processtext(0)
+	} else if ($1 == "CMP") {
+		$0 = "SUBS XZR " $2 " " $3
+		processtext(0)
+	} else if ($1 == "CMPI") {
+		$0 = "SUBIS XZR " $2 " " $3
+		processtext(0)
+	} else if ($1 == "LDA") {
+		$0 = "MOVZ " $2 " " $3 " LSL 0"
+		movlda[nexttext] = 1
+		processtext(0)
+		$0 = "MOVK " $2 " " $3 " LSL 16"
+		movlda[nexttext] = 1
+		processtext(0)
+		$0 = "MOVK " $2 " " $3 " LSL 32"
+		movlda[nexttext] = 1
+		processtext(0)
+		$0 = "MOVK " $2 " " $3 " LSL 48"
+		movlda[nexttext] = 1
+		processtext(0)
+	} else {
+		opcode = getopcode()
+
+		textop[nexttext] = opcode
+		textline[nexttext] = NR
+		text[nexttext++] = $0
+	}
+}
+
+# process data code, there's no data array since can be read once
+function processdata(type, i) {
+	type = $1
+	$1 = ""
+	gsub(/,/, "")
+	$0 = $0
+	if (type == ".word") {
+		writedata(8)
+	} else {
+		err("unknown directive: " $1)
+	}
+
+}
+
+# process MOV instructions
+function mov(opcode, lda, op, final) {
+	op = symtab[op]
+	final = substr(opcode, 10, 2)
+	if (!lda)
+		return dtob(op, 16)
+	else if (final == "00")
+		return dtob(op, 64, 49, 16)
+	else if (final == "01")
+		return dtob(op, 64, 33, 16)
+	else if (final == "10")
+		return dtob(op, 64, 17, 16)
+	else if (final == "11")
+		return dtob(op, 64, 1, 16)
+	else
+		err("unknown instruction")
+}
+
+# check the instruction format and assemble its binary form
+function assemble(mempos,  instruction, n, a, opcode, op1, op2, op3, format, i, condition, assembled) {
+	NR = textline[mempos]
+	opcode = textop[mempos]
+	instruction = text[mempos]
+	n = split(instruction, a)
+	op1 = a[2]
+	op2 = a[3]
+	op3 = a[4]
+	format = getformat(opcode)
+	for (i in eqv) {
+		if (op1 == i) op1 = eqv[i]
+		if (op2 == i) op2 = eqv[i]
+		if (op3 == i) op3 = eqv[i]
+	}
+	# the array a is being reused for assembling the assembled binary
+	if (format == "SHIFT") {
+		a[1] = "00000"
+		a[2] = dtob(op3, 6)
+		a[3] = getregister(op2)
+		a[4] = getregister(op1)
+	} else if (format == "R") {
+		a[1] = getregister(op3)
+		a[2] = "000000"
+		a[3] = getregister(op2)
+		a[4] = getregister(op1)
+	} else if (format == "I") {
+		a[1] = dtob(op3, 12)
+		a[2] = getregister(op2)
+		a[3] = getregister(op1)
+		a[4] = ""
+	} else if (format == "B") {
+		a[1] = dtob((symtab[op1] - mempos), 26)
+		a[2] = ""
+		a[3] = ""
+		a[4] = ""
+	} else if (format == "BR") {
+		a[1] = "11111"
+		a[2] = "000000"
+		a[3] = getregister(op1)
+		a[4] = "00000"
+	} else if (format == "CB") {
+		a[1] = dtob(symtab[op2] - mempos, 19)
+		a[2] = getregister(op1)
+		a[3] = ""
+		a[4] = ""
+	} else if (format == "BFLAG") {
+		a[1] = dtob(symtab[op1] - mempos, 19)
+		a[2] = branchtab[bflag[mempos]]
+		a[3] = ""
+		a[4] = ""
+	} else if (format == "LDUR") {
+		a[1] = dtob(op3, 9)
+		a[2] = "11"
+		a[3] = getregister(op2)
+		a[4] = getregister(op1)
+	} else if (format == "STUR") {
+		a[1] = dtob(op3, 9)
+		a[2] = "00"
+		a[3] = getregister(op2)
+		a[4] = getregister(op1)
+	} else if (format == "MOV") {
+		a[1] = mov(opcode, movlda[mempos], op2)
+		a[2] = getregister(op1)
+		a[3] = ""
+		a[4] = ""
+	}
+	assembled = opcode a[1] a[2] a[3] a[4]
+	assembled = btoh(assembled, textsize)
+	printf "%s    // %s\n", assembled, instruction >textfile
+}
+
+# remove single-line comments
+{
+	sub(/\/\/.*/, "")
+	sub(/\/\*.*\*\//, "")
+}
+
+# remove multi-line comments
+/\/\*/ {
+	comment = 2
+	sub(/\/\*.*/, "")
+}
+
+# remove multi-line comments
+/\*\// {
+	comment = 0
+	sub(/.*\*\//, "")
+}
+
+# remove multi-line comments
+comment {
+	if (comment == 1)
+		next
+	else
+		comment = 1
+}
+
+# get constants
+$1 == ".eqv" {
+	eqv[$2] = $3
+	next
+}
+
+# beginning of .data section
+$1 == ".data" {
+	section = DATA
+	next
+}
+
+# beginning of .text section
+$1 == ".text" {
+	section = TEXT
+	next
+}
+
+# process label
+$1 ~ /^[A-Za-z_][0-9A-Za-z_]*:$/ {
+	sub(/:$/, "", $1)
+	if (section == DATA)
+		symtab[$1] = nextdata
+	else if (section == TEXT)
+		symtab[$1] = nexttext
+	$1 = ""
+	$0 = $0
+}
+
+$1 {
+	if (section == TEXT)
+		processtext(1)
+	else if (section == DATA)
+		processdata()
+	else
+		err("invalid line")
+}
+
+END {
+	if (error)
+		exit 1
+	for (i = 0; i < nexttext; i++)
+		assemble(i)
+	close(textfile)
+	close(datafile)
+}
