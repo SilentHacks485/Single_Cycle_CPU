@@ -1,0 +1,236 @@
+
+----------------------------
+pc : 0
+----------------------------
+Instruction : 11111000000010110101011111111111
+----------------------------
+Control Bits : 
+Reg2Loc : 1
+ALUSrc : 1
+MemtoReg : 0
+RegWrite : 0
+MemRead : 0
+MemWrite : 1
+Branch : 0
+ALUOp1 : 0
+ALUOp1 : 0
+----------------------------
+D-FORMAT :
+opcode : 11111000000
+address : 010110101
+op :01
+Rn : 11111
+Rt :11111
+----------------------------
+Data 1 : 0
+Data 2 : 181
+----------------------------
+ALU Result : 181
+----------------------------
+Register 0 : 0
+Register 1 : 1
+Register 2 : 1
+Register 3 : 0
+Register 4 : 0
+Register 5 : 0
+Register 6 : 0
+Register 7 : 0
+Register 8 : 0
+Register 9 : 0
+Register 10 : 0
+Register 11 : 0
+Register 12 : 0
+Register 13 : 0
+Register 14 : 0
+Register 15 : 0
+Register 16 : 0
+Register 17 : 0
+Register 18 : 0
+Register 19 : 0
+Register 20 : 0
+Register 21 : 0
+Register 22 : 0
+Register 23 : 0
+Register 24 : 0
+Register 25 : 0
+Register 26 : 0
+Register 27 : 0
+Register 28 : 0
+Register 29 : 0
+Register 30 : 0
+Register 31 : 0
+----------------------------
+pc : 1
+----------------------------
+Instruction : 11111000010000000000110000000000
+----------------------------
+Control Bits : 
+Reg2Loc : 0
+ALUSrc : 1
+MemtoReg : 1
+RegWrite : 1
+MemRead : 1
+MemWrite : 0
+Branch : 0
+ALUOp1 : 0
+ALUOp1 : 0
+----------------------------
+D-FORMAT :
+opcode : 11111000010
+address : 000000000
+op :11
+Rn : 00000
+Rt :00000
+----------------------------
+Data 1 : 0
+Data 2 : 0
+----------------------------
+ALU Result : 0
+----------------------------
+Register 0 : 0
+Register 1 : 1
+Register 2 : 1
+Register 3 : 0
+Register 4 : 0
+Register 5 : 0
+Register 6 : 0
+Register 7 : 0
+Register 8 : 0
+Register 9 : 0
+Register 10 : 0
+Register 11 : 0
+Register 12 : 0
+Register 13 : 0
+Register 14 : 0
+Register 15 : 0
+Register 16 : 0
+Register 17 : 0
+Register 18 : 0
+Register 19 : 0
+Register 20 : 0
+Register 21 : 0
+Register 22 : 0
+Register 23 : 0
+Register 24 : 0
+Register 25 : 0
+Register 26 : 0
+Register 27 : 0
+Register 28 : 0
+Register 29 : 0
+Register 30 : 0
+Register 31 : 0
+----------------------------
+pc : 2
+----------------------------
+Instruction : 10110100000000000000000000000000
+----------------------------
+Control Bits : 
+Reg2Loc : 1
+ALUSrc : 0
+MemtoReg : 0
+RegWrite : 0
+MemRead : 0
+MemWrite : 0
+Branch : 1
+ALUOp1 : 0
+ALUOp1 : 1
+----------------------------
+CB-FORMAT :
+opcode : 10110100
+address : 0000000000000000000
+Rt : 00000
+----------------------------
+Data : 0
+----------------------------
+Register 0 : 0
+Register 1 : 1
+Register 2 : 1
+Register 3 : 0
+Register 4 : 0
+Register 5 : 0
+Register 6 : 0
+Register 7 : 0
+Register 8 : 0
+Register 9 : 0
+Register 10 : 0
+Register 11 : 0
+Register 12 : 0
+Register 13 : 0
+Register 14 : 0
+Register 15 : 0
+Register 16 : 0
+Register 17 : 0
+Register 18 : 0
+Register 19 : 0
+Register 20 : 0
+Register 21 : 0
+Register 22 : 0
+Register 23 : 0
+Register 24 : 0
+Register 25 : 0
+Register 26 : 0
+Register 27 : 0
+Register 28 : 0
+Register 29 : 0
+Register 30 : 0
+Register 31 : 0
+----------------------------
+pc : 3
+----------------------------
+Instruction : 10001011000000010000000000000000
+----------------------------
+Control Bits : 
+Reg2Loc : 0
+ALUSrc : 0
+MemtoReg : 0
+RegWrite : 1
+MemRead : 0
+MemWrite : 0
+Branch : 0
+ALUOp1 : 1
+ALUOp1 : 0
+----------------------------
+R-FORMAT : 
+opcode : 10001011000
+Rm : 00001
+Shamt :000000
+Rn : 00000
+Rd :00000
+----------------------------
+Data 1 : 1
+Data 2 : 0
+----------------------------
+ALU Result : 1
+----------------------------
+Register 0 : 1
+Register 1 : 1
+Register 2 : 1
+Register 3 : 0
+Register 4 : 0
+Register 5 : 0
+Register 6 : 0
+Register 7 : 0
+Register 8 : 0
+Register 9 : 0
+Register 10 : 0
+Register 11 : 0
+Register 12 : 0
+Register 13 : 0
+Register 14 : 0
+Register 15 : 0
+Register 16 : 0
+Register 17 : 0
+Register 18 : 0
+Register 19 : 0
+Register 20 : 0
+Register 21 : 0
+Register 22 : 0
+Register 23 : 0
+Register 24 : 0
+Register 25 : 0
+Register 26 : 0
+Register 27 : 0
+Register 28 : 0
+Register 29 : 0
+Register 30 : 0
+Register 31 : 0

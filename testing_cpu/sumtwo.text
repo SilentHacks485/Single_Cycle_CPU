@@ -1,0 +1,4 @@
+f8 0b 57 ff    // STUR
+f8 40 0c 00    // LDUR X0 X0 0
+b4 00 00 00    // CBZ X0 END
+8b 01 00 00    // ADD X0 X0 X1
