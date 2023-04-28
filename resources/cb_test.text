@@ -1,0 +1,11 @@
+91 00 2b e0    // ADDI X0 XZR 10
+91 00 04 21    // ADDI X1 X1 1
+b5 00 00 60    // CBNZ X0 subtractor
+b4 00 00 82    // CBZ X2 add
+b5 00 00 a2    // CBNZ X2 end
+d1 00 04 00    // SUBI X0 X0 1
+b5 ff ff 60    // CBNZ X0 main
+91 00 04 42    // ADDI X2 X2 1
+b5 ff ff 22    // CBNZ X2 main
+
+

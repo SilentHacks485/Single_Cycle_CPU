@@ -1,0 +1,14 @@
+91 00 07 e1    // ADDI X1 XZR 1
+91 00 0b e2    // ADDI X2 XZR 2
+91 00 0f e3    // ADDI X3 XZR 3
+91 00 13 e4    // ADDI X4 XZR 4
+91 00 17 e5    // ADDI X5 XZR 5
+91 00 1b e6    // ADDI X6 XZR 6
+91 00 1f e7    // ADDI X7 XZR 7
+91 00 23 e8    // ADDI X8 XZR 8
+91 00 27 e9    // ADDI X9 XZR 9
+91 00 2b ea    // ADDI X10 XZR 10
+f8 03 03 e7    // STUR X7 XZR 48
+f8 03 83 e8    // STUR X8 XZR 56
+f8 04 03 e9    // STUR X9 XZR 64
+f8 04 83 ea    // STUR X10 XZR 72

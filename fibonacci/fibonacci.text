@@ -1,0 +1,20 @@
+91 00 37 f5    // ADDI X21 XZR 13
+91 00 03 f6    // ADDI X22 XZR 0
+91 00 07 f7    // ADDI X23 XZR 1
+f8 00 03 f6    // STUR X22 XZR 0
+f8 00 83 f7    // STUR X23 XZR 8
+91 00 03 f8    // ADDI X24 XZR 0
+91 00 43 e9    // ADDI X9 XZR 16
+8b 16 02 f8    // ADD X24 X23 X22
+8b 17 03 f6    // ADD X22 XZR X23
+8b 18 03 f7    // ADD X23 XZR X24
+f8 00 01 38    // STUR X24 X9 0
+b5 00 00 55    // CBNZ X21 subtractor
+b4 00 00 95    // CBZ X21 end
+d1 00 06 b5    // SUBI X21 X21 1
+91 00 21 29    // ADDI X9 X9 8
+b5 ff ff 15    // CBNZ X21 main
+91 00 03 f5    // ADDI X21 XZR 0
+91 00 03 f6    // ADDI X22 XZR 0
+91 00 03 f7    // ADDI X23 XZR 0
+91 00 03 f8    // ADDI X24 XZR 0

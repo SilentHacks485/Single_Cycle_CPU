@@ -1,0 +1,8 @@
+91 00 07 e0    // ADDI X0 XZR 1
+8b 00 00 21    // ADD X1 X1 X0
+8b 01 00 23    // ADD X3 X1 X1
+8b 01 00 64    // ADD X4 X3 X1
+cb 01 00 00    // SUB X0 X0 X1
+cb 02 00 23    // SUB X3 X1 X2
+aa 03 00 41    // ORR X1 X2 X3
+8a 00 00 62    // AND X2 X3 X0
